@@ -2,14 +2,15 @@ import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { FarcasterSDKProvider } from '@/components/farcaster-sdk-provider'
-import { FarcasterReady } from '@/components/FarcasterReady'
+import { WalletProvider } from '@/components/wallet-provider'
 import './globals.css'
+import { FarcasterReady } from "@/components/FarcasterReady"
+import { FarcasterSDKProvider } from "@/components/farcaster-sdk-provider"
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://farcaster-names.example.com'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://farcaster-celo.vercel.app'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -116,9 +117,11 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         {/* FarcasterReady signals to Warpcast that the app has finished loading */}
         <FarcasterReady />
-        <FarcasterSDKProvider>
-          {children}
-        </FarcasterSDKProvider>
+        <WalletProvider>
+          <FarcasterSDKProvider>
+            {children}
+          </FarcasterSDKProvider>
+        </WalletProvider>
         <Analytics />
       </body>
     </html>

@@ -5,154 +5,82 @@ import { Wallet, AlertCircle, Zap, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useAccount, useConnect, useDisconnect, useBalance } from 'wagmi'
 import { formatAddress } from '@/lib/blockchain'
-import {
-  connectFarcasterWallet,
-  disconnectFarcasterWallet,
-  getFarcasterWalletBalance,
-  initFarcasterWallet,
-  onAccountChange,
-  isWalletAvailable,
-  switchToCeloMainnet,
-  type WalletAccount,
-} from '@/lib/farcaster-wallet'
 import { isInMiniApp } from '@/lib/farcaster-sdk'
-import { ethers } from 'ethers'
 
 interface WalletStatusProps {
   address?: string
   onConnect?: () => Promise<void>
   gasPrice?: string
-  onAccountChange?: (account: WalletAccount | null) => void
+  onAccountChange?: (account: { address: string; chainId: number; isConnected: boolean } | null) => void
 }
 
 export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onAccountChange: onAccountChangeProp }: WalletStatusProps) {
-  const [account, setAccount] = useState<WalletAccount | null>(
-    initialAddress ? { address: initialAddress, chainId: 42220, isConnected: true } : null
-  )
-  const [loading, setLoading] = useState(false)
-  const [balance, setBalance] = useState<string>('0.00')
+  const { address, isConnected, chainId } = useAccount()
+  const { connect, connectors, isPending } = useConnect()
+  const { disconnect } = useDisconnect()
+  const { data: balanceData } = useBalance({
+    address: address as `0x${string}`,
+  })
+
   const [error, setError] = useState<string | null>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
   const [inMiniApp, setInMiniApp] = useState(false)
   const [walletAvailable, setWalletAvailable] = useState(false)
 
-  // Initialize Farcaster wallet on mount
+  // Initialize mini app status
   useEffect(() => {
-    const initialize = async () => {
-      try {
-        // Check if in mini app
-        const miniAppStatus = isInMiniApp()
-        setInMiniApp(miniAppStatus)
-        console.log('[WalletStatus] Mini app status:', miniAppStatus)
-
-        // Check wallet availability
-        const walletStatus = isWalletAvailable()
-        setWalletAvailable(walletStatus)
-        console.log('[WalletStatus] Wallet available:', walletStatus)
-
-        const initialized = await initFarcasterWallet()
-        setIsInitialized(initialized)
-        console.log('[WalletStatus] Wallet initialized:', initialized)
-        
-        if (initialized) {
-          // Check if already connected
-          try {
-            const provider = await import('@/lib/farcaster-wallet').then(m => m.getFarcasterWalletProvider())
-            const accounts = await provider?.request?.({ method: 'eth_accounts' })
-            
-            if (accounts && accounts.length > 0) {
-              const chainIdHex = await provider?.request?.({ method: 'eth_chainId' })
-              setAccount({
-                address: accounts[0],
-                chainId: parseInt(chainIdHex, 16),
-                isConnected: true,
-              })
-              console.log('[WalletStatus] Pre-connected account found:', formatAddress(accounts[0]))
-            }
-          } catch (err) {
-            console.log('[WalletStatus] No pre-connected account')
-          }
-        }
-      } catch (error) {
-        console.error('[WalletStatus] Failed to initialize Farcaster wallet:', error)
-      }
+    const miniAppStatus = isInMiniApp()
+    setInMiniApp(miniAppStatus)
+    console.log('[WalletStatus] Mini app status:', miniAppStatus)
+    // Simulate wallet availability detection in mini app context
+    if (miniAppStatus) {
+      // Replace this logic with actual wallet detection if available
+      setWalletAvailable(!!window.ethereum)
     }
-
-    initialize()
   }, [])
 
-  // Setup account change listener
+  // Notify parent of account changes
   useEffect(() => {
-    if (!isInitialized) return
-
-    const unsubscribe = onAccountChange?.((newAccount) => {
-      setAccount(newAccount)
-      onAccountChangeProp?.(newAccount)
-    })
-
-    return () => {
-      unsubscribe?.()
-    }
-  }, [isInitialized, onAccountChangeProp])
-
-  // Fetch balance when account changes
-  useEffect(() => {
-    if (!account?.address) {
-      setBalance('0.00')
-      return
-    }
-
-    const fetchBalance = async () => {
-      try {
-        const balanceWei = await getFarcasterWalletBalance(account.address)
-        const balanceCELO = ethers.formatEther(balanceWei)
-        setBalance(parseFloat(balanceCELO).toFixed(4))
-      } catch (error) {
-        console.error('Error fetching balance:', error)
-        setBalance('0.00')
+    if (isConnected && address && chainId) {
+      const account = {
+        address,
+        chainId,
+        isConnected: true,
       }
+      onAccountChangeProp?.(account)
+    } else {
+      onAccountChangeProp?.(null)
     }
-
-    fetchBalance()
-  }, [account?.address])
+  }, [address, isConnected, chainId, onAccountChangeProp])
 
   const handleConnect = async () => {
-    setLoading(true)
-    setError(null)
     try {
-      const connectedAccount = await connectFarcasterWallet()
-      setAccount(connectedAccount)
-
+      setError(null)
+      // Use the first connector (WalletConnect)
+      connect({ connector: connectors[0] })
       if (onConnect) {
         await onConnect()
       }
-
-      onAccountChangeProp?.(connectedAccount)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Connection failed'
-      setError(errorMessage)
-      console.error('Wallet connection error:', err)
-    } finally {
-      setLoading(false)
+      console.error('Failed to connect wallet:', err)
+      setError('Failed to connect wallet')
     }
   }
 
   const handleDisconnect = async () => {
-    setLoading(true)
     try {
-      await disconnectFarcasterWallet()
-      setAccount(null)
-      setBalance('0.00')
-      onAccountChangeProp?.(null)
-    } catch (error) {
-      console.error('Disconnect error:', error)
-    } finally {
-      setLoading(false)
+      disconnect()
+    } catch (err) {
+      console.error('Failed to disconnect wallet:', err)
+      setError('Failed to disconnect wallet')
     }
   }
 
-  if (account?.isConnected && account?.address) {
+
+  if (isConnected && address) {
+    const balance = balanceData ? parseFloat((Number(balanceData.value) / Math.pow(10, balanceData.decimals)).toString()).toFixed(4) : '0.00'
+
     return (
       <Card className="p-5 dashboard-card border-primary/40 animate-fade-in-down">
         <div className="flex items-center justify-between gap-4">
@@ -162,7 +90,7 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold">Wallet Connected</p>
-              <p className="text-xs text-muted-foreground truncate font-mono">{formatAddress(account.address)}</p>
+              <p className="text-xs text-muted-foreground truncate font-mono">{formatAddress(address)}</p>
             </div>
             <Badge className="text-xs bg-secondary/20 text-secondary hover:bg-secondary/30">
               Ready
@@ -170,7 +98,7 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
           </div>
 
           <div className="text-right space-y-1">
-            <p className="text-sm font-semibold">{balance} CELO</p>
+            <p className="text-sm font-semibold">{balance} {balanceData?.symbol || 'ETH'}</p>
             {gasPrice && (
               <div className="flex items-center justify-end gap-1 text-xs text-accent font-medium">
                 <Zap className="w-3 h-3" />
@@ -183,10 +111,9 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
             variant="ghost"
             size="sm"
             onClick={handleDisconnect}
-            disabled={loading}
             className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           >
-            {loading ? 'Disconnecting...' : 'Disconnect'}
+            Disconnect
           </Button>
         </div>
       </Card>
@@ -227,27 +154,19 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
         <Card className="p-6 dashboard-card border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5">
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground font-medium">
-              {inMiniApp ? 'Connect Your Farcaster Wallet' : 'Ready to claim your identity?'}
+              {inMiniApp ? 'Connect Your Wallet' : 'Ready to claim your identity?'}
             </p>
             <Button
               onClick={handleConnect}
-              disabled={loading || !isInitialized || (inMiniApp && !walletAvailable)}
+              disabled={isPending}
               className="w-full h-12 gap-2 font-semibold text-base"
               size="lg"
             >
-              {loading ? (
-                'Connecting...'
-              ) : !isInitialized ? (
-                'Initializing Wallet...'
-              ) : inMiniApp && !walletAvailable ? (
-                'Wallet Initializing...'
-              ) : (
-                'Connect Farcaster Wallet'
-              )}
+              {isPending ? 'Connecting...' : 'Connect Wallet'}
             </Button>
             <p className="text-xs text-muted-foreground text-center leading-relaxed">
               {inMiniApp
-                ? 'Your Farcaster mini app wallet gives you direct access to Celo mainnet. Sign in to claim your permanent identity.'
+                ? 'Pilih wallet (MetaMask, Coinbase, Trust) untuk melanjutkan. Wallet akan terdeteksi secara otomatis di Farcaster Mini App.'
                 : 'Your Farcaster frame wallet gives you direct access to Celo mainnet. Sign in to claim your permanent identity.'}
             </p>
           </div>
