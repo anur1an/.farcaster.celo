@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Wallet, AlertCircle, Zap } from 'lucide-react'
+import { Wallet, AlertCircle, Zap, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,8 +12,10 @@ import {
   getFarcasterWalletBalance,
   initFarcasterWallet,
   onAccountChange,
+  isWalletAvailable,
   type WalletAccount,
 } from '@/lib/farcaster-wallet'
+import { isInMiniApp } from '@/lib/farcaster-sdk'
 import { ethers } from 'ethers'
 
 interface WalletStatusProps {
@@ -31,11 +33,23 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
   const [balance, setBalance] = useState<string>('0.00')
   const [error, setError] = useState<string | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [inMiniApp, setInMiniApp] = useState(false)
+  const [walletAvailable, setWalletAvailable] = useState(false)
 
   // Initialize Farcaster wallet on mount
   useEffect(() => {
     const initialize = async () => {
       try {
+        // Check if in mini app
+        const miniAppStatus = isInMiniApp()
+        setInMiniApp(miniAppStatus)
+        console.log('Mini app status:', miniAppStatus)
+
+        // Check wallet availability
+        const walletStatus = isWalletAvailable()
+        setWalletAvailable(walletStatus)
+        console.log('Wallet available:', walletStatus)
+
         const initialized = await initFarcasterWallet()
         setIsInitialized(initialized)
         
@@ -52,9 +66,10 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
                 chainId: parseInt(chainIdHex, 16),
                 isConnected: true,
               })
+              console.log('Pre-connected account found:', formatAddress(accounts[0]))
             }
           } catch (err) {
-            // No connected account yet
+            console.log('No pre-connected account')
           }
         }
       } catch (error) {
@@ -182,7 +197,26 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
         <Card className="p-4 border-destructive/50 bg-destructive/10 animate-fade-in-down">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-destructive">{error}</p>
+            <div className="flex-1">
+              <p className="text-sm text-destructive font-medium">Connection Error</p>
+              <p className="text-xs text-destructive/80 mt-1">{error}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {inMiniApp && (
+        <Card className="p-4 border-green-500/30 bg-green-500/10">
+          <div className="flex items-start gap-3">
+            <Activity className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-green-900">Farcaster Mini App Detected</p>
+              <p className="text-xs text-green-800/80 mt-1">
+                {walletAvailable
+                  ? 'Wallet is available in mini app context'
+                  : 'Wallet not yet available - please wait'}
+              </p>
+            </div>
           </div>
         </Card>
       )}
@@ -190,17 +224,29 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
       <div className="space-y-4">
         <Card className="p-6 dashboard-card border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5">
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground font-medium">Ready to claim your identity?</p>
+            <p className="text-sm text-muted-foreground font-medium">
+              {inMiniApp ? 'Connect Your Farcaster Wallet' : 'Ready to claim your identity?'}
+            </p>
             <Button
               onClick={handleConnect}
-              disabled={loading || !isInitialized}
+              disabled={loading || !isInitialized || (inMiniApp && !walletAvailable)}
               className="w-full h-12 gap-2 font-semibold text-base"
               size="lg"
             >
-              {loading ? 'Connecting...' : !isInitialized ? 'Initializing Wallet...' : 'Connect Farcaster Wallet'}
+              {loading ? (
+                'Connecting...'
+              ) : !isInitialized ? (
+                'Initializing Wallet...'
+              ) : inMiniApp && !walletAvailable ? (
+                'Wallet Initializing...'
+              ) : (
+                'Connect Farcaster Wallet'
+              )}
             </Button>
             <p className="text-xs text-muted-foreground text-center leading-relaxed">
-              Your Farcaster frame wallet gives you direct access to Celo mainnet. Sign in to claim your permanent identity.
+              {inMiniApp
+                ? 'Your Farcaster mini app wallet gives you direct access to Celo mainnet. Sign in to claim your permanent identity.'
+                : 'Your Farcaster frame wallet gives you direct access to Celo mainnet. Sign in to claim your permanent identity.'}
             </p>
           </div>
         </Card>
