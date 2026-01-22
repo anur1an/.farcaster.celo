@@ -87,6 +87,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="manifest" href="/manifest.json" />
+        {/* Farcaster Mini App SDK - Required for wallet detection and mini app features */}
+        <script async src="https://cdn.jsdelivr.net/npm/@farcaster/frames@latest/dist/sdk.js"></script>
       </head>
       <body className={`font-sans antialiased`}>
         <FarcasterSDKProvider>

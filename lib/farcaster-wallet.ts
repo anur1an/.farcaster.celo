@@ -4,21 +4,47 @@
 
 import { isInMiniApp } from './farcaster-sdk'
 
-interface FarcasterWindow extends Window {
-  farcasterConnect?: {
-    provider?: any
-    ready?: boolean
-    connect?: () => Promise<any>
-  }
-  ethereum?: any
+interface FarcasterWalletProvider {
+  request?: (args: any) => Promise<any>
+  on?: (event: string, callback: (...args: any[]) => void) => void
+  off?: (event: string, callback: (...args: any[]) => void) => void
+  disconnect?: () => Promise<void>
 }
 
-declare let window: FarcasterWindow
+// Extend window type for ethereum provider
+declare global {
+  interface Window {
+    ethereum?: FarcasterWalletProvider
+  }
+}
 
 export interface WalletAccount {
   address: string
   chainId: number
   isConnected: boolean
+}
+
+/**
+ * Wait for wallet provider to be available
+ */
+function waitForProvider(): Promise<any> {
+  return new Promise((resolve) => {
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds with 100ms intervals
+
+    const checkProvider = () => {
+      const provider = (window as any).ethereum;
+      
+      if (provider || attempts >= maxAttempts) {
+        resolve(provider);
+      } else {
+        attempts++;
+        setTimeout(checkProvider, 100);
+      }
+    };
+
+    checkProvider();
+  });
 }
 
 /**
@@ -29,21 +55,19 @@ export function isWalletAvailable(): boolean {
     return false
   }
 
-  // First check: Farcaster wallet provider
-  if (window.farcasterConnect?.provider) {
+  // Check for Farcaster SDK wallet provider
+  if ((window as any).farcaster?.wallet?.provider) {
+    console.log('[Wallet] Found farcaster.wallet.provider')
     return true
   }
 
-  // Second check: window.ethereum (standard EIP-1193)
-  if (window.ethereum && !window.ethereum.isFarcaster && isInMiniApp()) {
+  // Check for standard window.ethereum (EIP-1193)
+  if ((window as any).ethereum) {
+    console.log('[Wallet] Found window.ethereum')
     return true
   }
 
-  // Third check: window.ethereum in mini app context
-  if (window.ethereum && isInMiniApp()) {
-    return true
-  }
-
+  console.log('[Wallet] No wallet provider detected')
   return false
 }
 
@@ -52,16 +76,32 @@ export async function getFarcasterWalletProvider() {
     throw new Error('Farcaster wallet is only available in browser')
   }
 
-  // Primary: Farcaster wallet provider
-  if (window.farcasterConnect?.provider) {
-    console.log('Using farcasterConnect provider')
-    return window.farcasterConnect.provider
+  // Check for Farcaster SDK wallet provider first (recommended)
+  if ((window as any).farcaster?.wallet?.provider) {
+    console.log('[Wallet] Using farcaster.wallet.provider')
+    return (window as any).farcaster.wallet.provider
   }
 
-  // Fallback: window.ethereum in mini app context
-  if (window.ethereum && isInMiniApp()) {
-    console.log('Using window.ethereum provider in mini app context')
-    return window.ethereum
+  // Check if we're in mini app context and have ethereum provider
+  if (isInMiniApp()) {
+    // Wait for provider to be available
+    let provider = (window as any).ethereum;
+    
+    if (!provider) {
+      console.log('[Wallet] Waiting for provider to be injected...')
+      provider = await waitForProvider();
+    }
+
+    if (provider) {
+      console.log('[Wallet] Using window.ethereum provider in mini app context')
+      return provider
+    }
+  }
+
+  // Fallback: Use window.ethereum if available
+  if ((window as any).ethereum) {
+    console.log('[Wallet] Using window.ethereum provider (fallback)')
+    return (window as any).ethereum
   }
 
   throw new Error('Farcaster wallet provider not available')
@@ -74,7 +114,7 @@ export async function connectFarcasterWallet(): Promise<WalletAccount> {
     }
 
     const provider = await getFarcasterWalletProvider()
-    console.log('Attempting to connect wallet...')
+    console.log('[Wallet] Attempting to connect wallet...')
 
     // Request accounts from the wallet
     const accounts = await provider.request({
@@ -85,7 +125,7 @@ export async function connectFarcasterWallet(): Promise<WalletAccount> {
       throw new Error('No accounts found')
     }
 
-    console.log('Connected account:', accounts[0])
+    console.log('[Wallet] Connected account:', accounts[0])
 
     // Get chain ID
     const chainIdHex = await provider.request({
@@ -93,7 +133,7 @@ export async function connectFarcasterWallet(): Promise<WalletAccount> {
     })
 
     const chainId = parseInt(chainIdHex, 16)
-    console.log('Chain ID:', chainId)
+    console.log('[Wallet] Chain ID:', chainId)
 
     return {
       address: accounts[0],
@@ -101,7 +141,7 @@ export async function connectFarcasterWallet(): Promise<WalletAccount> {
       isConnected: true,
     }
   } catch (error) {
-    console.error('Error connecting Farcaster wallet:', error)
+    console.error('[Wallet] Error connecting Farcaster wallet:', error)
     throw error
   }
 }
@@ -164,7 +204,7 @@ export function onAccountChange(callback: (account: WalletAccount | null) => voi
   if (typeof window === 'undefined') return
 
   try {
-    const provider = window.farcasterConnect?.provider
+    const provider = (window as any).farcaster?.wallet?.provider || (window as any).ethereum
     if (!provider) return
 
     const handleAccountChange = async () => {
@@ -226,24 +266,29 @@ export async function initFarcasterWallet() {
   if (typeof window === 'undefined') return false
 
   try {
-    // Wait for Farcaster SDK to be available
-    const maxRetries = 10
+    // Check if provider is already available
+    if (isWalletAvailable()) {
+      console.log('[Wallet] Wallet provider is available')
+      return true
+    }
+
+    // Wait for Farcaster SDK wallet provider to be available
+    const maxRetries = 50 // 5 seconds with 100ms intervals
     let retries = 0
 
-    while (retries < maxRetries && !window.farcasterConnect?.provider) {
+    while (retries < maxRetries) {
+      if (isWalletAvailable()) {
+        console.log('[Wallet] Wallet provider detected')
+        return true
+      }
       await new Promise(resolve => setTimeout(resolve, 100))
       retries++
     }
 
-    if (window.farcasterConnect?.provider) {
-      console.log('Farcaster wallet provider initialized')
-      return true
-    }
-
-    console.warn('Farcaster wallet provider not found after retries')
+    console.warn('[Wallet] Wallet provider not found after retries')
     return false
   } catch (error) {
-    console.error('Error initializing Farcaster wallet:', error)
+    console.error('[Wallet] Error initializing Farcaster wallet:', error)
     return false
   }
 }

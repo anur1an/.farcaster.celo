@@ -6,12 +6,15 @@ import { initializeFarcasterSDK, isInMiniApp } from '@/lib/farcaster-sdk'
 export function FarcasterSDKProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Initialize Farcaster SDK as early as possible
-    console.log('Initializing Farcaster SDK...')
-    initializeFarcasterSDK()
-
-    // Also check mini app status
-    const inMiniApp = isInMiniApp()
-    console.log('Running in Farcaster Mini App:', inMiniApp)
+    console.log('[SDK] Initializing Farcaster SDK...')
+    
+    // Handle async initialization
+    initializeFarcasterSDK().then(() => {
+      const inMiniApp = isInMiniApp()
+      console.log('[SDK] Running in Farcaster Mini App:', inMiniApp)
+    }).catch((error) => {
+      console.error('[SDK] Failed to initialize:', error)
+    })
   }, [])
 
   return <>{children}</>

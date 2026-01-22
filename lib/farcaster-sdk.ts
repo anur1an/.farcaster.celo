@@ -26,6 +26,46 @@ declare global {
 
 let sdkInitialized = false;
 let isInMiniAppContext = false;
+let sdkReadyPromise: Promise<void> | null = null;
+
+/**
+ * Wait for Farcaster SDK to be loaded
+ */
+function waitForSdkReady(): Promise<void> {
+  if (sdkReadyPromise) {
+    return sdkReadyPromise;
+  }
+
+  sdkReadyPromise = new Promise((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve();
+      return;
+    }
+
+    // Check if SDK is already loaded
+    if ((window as any).farcaster) {
+      resolve();
+      return;
+    }
+
+    // Wait for SDK to be loaded by checking periodically
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds with 100ms intervals
+
+    const checkSdk = () => {
+      if ((window as any).farcaster || attempts >= maxAttempts) {
+        resolve();
+      } else {
+        attempts++;
+        setTimeout(checkSdk, 100);
+      }
+    };
+
+    checkSdk();
+  });
+
+  return sdkReadyPromise;
+}
 
 /**
  * Check if the app is running in a Farcaster mini app context
@@ -45,6 +85,11 @@ export function isInMiniApp(): boolean {
     } catch (error) {
       console.warn('Error calling farcaster.isInMiniApp():', error);
     }
+  }
+
+  // Check for window.farcaster SDK (core SDK)
+  if ((window as any).farcaster) {
+    return true;
   }
 
   // Fallback: check for farcaster context in window
@@ -98,7 +143,7 @@ export function notifyAppReady(): void {
  * Initialize the Farcaster SDK
  * Call this as early as possible in your app lifecycle
  */
-export function initializeFarcasterSDK(): void {
+export async function initializeFarcasterSDK(): Promise<void> {
   if (sdkInitialized) {
     return;
   }
@@ -108,11 +153,14 @@ export function initializeFarcasterSDK(): void {
   }
 
   try {
+    // Wait for SDK to be loaded
+    await waitForSdkReady();
+
     // Check if we're in mini app context
     isInMiniAppContext = isInMiniApp();
     
     if (isInMiniAppContext) {
-      console.log('Farcaster Mini App detected');
+      console.log('✓ Farcaster Mini App context detected');
       
       // Give the SDK time to initialize before calling ready
       // This ensures the SDK is fully set up
@@ -129,7 +177,7 @@ export function initializeFarcasterSDK(): void {
         }, 100);
       }
     } else {
-      console.log('Not in Farcaster Mini App context');
+      console.log('ℹ Not in Farcaster Mini App context - running standalone');
       sdkInitialized = true; // Mark as initialized even outside mini app
     }
   } catch (error) {

@@ -43,15 +43,16 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
         // Check if in mini app
         const miniAppStatus = isInMiniApp()
         setInMiniApp(miniAppStatus)
-        console.log('Mini app status:', miniAppStatus)
+        console.log('[WalletStatus] Mini app status:', miniAppStatus)
 
         // Check wallet availability
         const walletStatus = isWalletAvailable()
         setWalletAvailable(walletStatus)
-        console.log('Wallet available:', walletStatus)
+        console.log('[WalletStatus] Wallet available:', walletStatus)
 
         const initialized = await initFarcasterWallet()
         setIsInitialized(initialized)
+        console.log('[WalletStatus] Wallet initialized:', initialized)
         
         if (initialized) {
           // Check if already connected
@@ -66,14 +67,14 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
                 chainId: parseInt(chainIdHex, 16),
                 isConnected: true,
               })
-              console.log('Pre-connected account found:', formatAddress(accounts[0]))
+              console.log('[WalletStatus] Pre-connected account found:', formatAddress(accounts[0]))
             }
           } catch (err) {
-            console.log('No pre-connected account')
+            console.log('[WalletStatus] No pre-connected account')
           }
         }
       } catch (error) {
-        console.error('Failed to initialize Farcaster wallet:', error)
+        console.error('[WalletStatus] Failed to initialize Farcaster wallet:', error)
       }
     }
 
