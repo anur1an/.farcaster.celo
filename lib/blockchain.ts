@@ -19,7 +19,7 @@ export async function getGasPrice() {
   try {
     const feeData = await provider.getFeeData()
     // Celo mainnet gas price is usually in wei, return it directly
-    if (feeData.gasPrice && feeData.gasPrice > 0n) {
+    if (feeData.gasPrice && feeData.gasPrice > BigInt(0)) {
       return feeData.gasPrice
     }
     // Fallback to reasonable Celo gas price (1 gwei = 1000000000 wei)
@@ -177,8 +177,8 @@ export async function estimateRegistrationCost(): Promise<{
     const gasPrice = await getGasPrice()
     // Realistic gas estimate for domain registration: 100,000 - 150,000 gas
     // Using 120,000 as average
-    const estimatedGasUnits = 120000n
-    const estimatedGasWei = gasPrice * BigInt(estimatedGasUnits)
+    const estimatedGasUnits = BigInt(120000)
+    const estimatedGasWei = gasPrice * estimatedGasUnits
 
     const totalCostCELO = ethers.formatEther(estimatedGasWei)
     // REGISTRATION_FEE_USD is the domain fee, not tied to gas cost
