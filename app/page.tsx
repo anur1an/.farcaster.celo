@@ -6,17 +6,21 @@ import { Card } from '@/components/ui/card'
 import { Logo } from '@/components/Logo'
 import { DomainSearch } from '@/components/DomainSearch'
 import { RegistrationForm, type RegistrationData } from '@/components/RegistrationForm'
+import { MintTransactionHandler } from '@/components/MintTransactionHandler'
 import { NFTGallery } from '@/components/NFTGallery'
 import { WalletStatus } from '@/components/WalletStatus'
-import { Code, FileText, Network } from 'lucide-react'
+import { Code, FileText, Network, Zap } from 'lucide-react'
 import type { GasEstimate } from '@/lib/types'
 
 export default function Home() {
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
   const [walletConnected, setWalletConnected] = useState(false)
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [farcasterData, setFarcasterData] = useState<any>(null)
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null)
   const [activeTab, setActiveTab] = useState('register')
+  const [showMintTransaction, setShowMintTransaction] = useState(false)
+  const [registrationData, setRegistrationData] = useState<RegistrationData | null>(null)
 
   useEffect(() => {
     const fetchGasEstimate = async () => {
@@ -37,16 +41,34 @@ export default function Home() {
   }, [])
 
   const handleWalletConnect = async () => {
-    // Wallet connection is now handled by WalletStatus component
-    // which uses real Farcaster SDK wallet
     setWalletConnected(true)
-    // Address is set by WalletStatus component
+  }
+
+  const handleAccountChange = (account: any) => {
+    if (account?.isConnected) {
+      setWalletConnected(true)
+      setWalletAddress(account.address)
+      if (account.farcasterData) {
+        setFarcasterData(account.farcasterData)
+      }
+    } else {
+      setWalletConnected(false)
+      setWalletAddress(null)
+      setFarcasterData(null)
+    }
   }
 
   const handleRegistration = async (data: RegistrationData) => {
-    console.log('Registration data:', data)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    console.log('[Home] Registration data:', data)
+    setRegistrationData(data)
+    setShowMintTransaction(true)
+  }
+
+  const handleMintSuccess = (txHash: string) => {
+    console.log('[Home] Mint successful:', txHash)
+    setShowMintTransaction(false)
     setSelectedDomain(null)
+    setRegistrationData(null)
   }
 
   return (
@@ -76,18 +98,23 @@ export default function Home() {
 
           <div className="space-y-4">
             <WalletStatus
-              address={walletConnected ? walletAddress || undefined : undefined}
               onConnect={handleWalletConnect}
+              onAccountChange={handleAccountChange}
               gasPrice={gasEstimate?.totalCostUSD}
+              autoFetchFarcasterData={true}
             />
           </div>
 
-          {walletConnected && (
+          {walletConnected && walletAddress && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 animate-fade-in-up">
+              <TabsList className="grid w-full grid-cols-3 animate-fade-in-up">
                 <TabsTrigger value="register" className="gap-2">
                   <Code className="w-4 h-4" />
-                  Register Domain
+                  Register
+                </TabsTrigger>
+                <TabsTrigger value="mint" className="gap-2">
+                  <Zap className="w-4 h-4" />
+                  Mint
                 </TabsTrigger>
                 <TabsTrigger value="gallery" className="gap-2">
                   <FileText className="w-4 h-4" />
@@ -109,7 +136,34 @@ export default function Home() {
                         domain={selectedDomain}
                         onSubmit={handleRegistration}
                         gasEstimate={gasEstimate}
+                        autoMint={false}
+                        walletAddress={walletAddress}
                       />
+                    </div>
+                  )}
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="mint" className="space-y-6 animate-fade-in-up">
+                <Card className="p-6 space-y-6">
+                  {registrationData && showMintTransaction ? (
+                    <div>
+                      <h3 className="font-semibold mb-4">Mint Your NFT Domain</h3>
+                      <MintTransactionHandler
+                        domain={registrationData.domain}
+                        fid={registrationData.farcasterFid}
+                        username={registrationData.farcasterUsername}
+                        bio={registrationData.bio}
+                        socialLinks={registrationData.socialLinks}
+                        walletAddress={walletAddress}
+                        onSuccess={handleMintSuccess}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 space-y-4">
+                      <p className="text-muted-foreground">
+                        No pending registration. Register a domain first to mint.
+                      </p>
                     </div>
                   )}
                 </Card>
@@ -123,7 +177,7 @@ export default function Home() {
                       View and manage your registered domains and NFTs on OpenSea
                     </p>
                   </div>
-                  <NFTGallery owner={walletAddress || undefined} />
+                  <NFTGallery owner={walletAddress} />
                 </Card>
               </TabsContent>
             </Tabs>
@@ -138,25 +192,25 @@ export default function Home() {
                 </div>
                 <p className="font-medium mb-1">Connect Wallet</p>
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  Link your Farcaster frame wallet to Celo mainnet securely
+                  Auto-connects and reads your FID from Neynar API automatically
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-gradient-to-br from-secondary/10 to-secondary/5 hover:from-secondary/15 hover:to-secondary/10 transition-all duration-300 animate-float" style={{ animationDelay: '0.2s' }}>
                 <div className="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center text-sm font-bold text-secondary mb-3">
                   2
                 </div>
-                <p className="font-medium mb-1">Search & Register</p>
+                <p className="font-medium mb-1">Auto-Generate Domain</p>
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  Find available domains matching your Farcaster identity
+                  Domain name auto-generated from your Farcaster username or FID
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-gradient-to-br from-accent/10 to-accent/5 hover:from-accent/15 hover:to-accent/10 transition-all duration-300 animate-float" style={{ animationDelay: '0.4s' }}>
                 <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center text-sm font-bold text-accent mb-3">
                   3
                 </div>
-                <p className="font-medium mb-1">Mint & Share</p>
+                <p className="font-medium mb-1">Mint NFT with Popup</p>
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  Own your NFT and share to build your network
+                  Sign transaction in wallet popup for on-chain minting
                 </p>
               </div>
             </div>
@@ -166,9 +220,9 @@ export default function Home() {
             <Card className="p-5 space-y-3 dashboard-card animate-slide-up group cursor-pointer hover:glow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-semibold text-primary mb-1">Verified Ownership</p>
+                  <p className="font-semibold text-primary mb-1">Verified by Neynar</p>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Your FID is cryptographically linked to your domain, preventing impersonation
+                    Your FID is automatically verified via Neynar API
                   </p>
                 </div>
               </div>
@@ -176,9 +230,9 @@ export default function Home() {
             <Card className="p-5 space-y-3 dashboard-card animate-slide-up group cursor-pointer hover:glow" style={{ animationDelay: '0.1s' }}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-semibold text-accent mb-1">OpenSea Ready</p>
+                  <p className="font-semibold text-accent mb-1">Real On-Chain Minting</p>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Your NFT is instantly tradeable with full metadata on OpenSea
+                    Domains are minted as real NFTs on Celo mainnet
                   </p>
                 </div>
               </div>
