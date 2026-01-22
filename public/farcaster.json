@@ -1,0 +1,12 @@
+{
+  "version": "1",
+  "name": "Farcaster Celo Names",
+  "short_name": "Celo Names",
+  "description": "Register and manage .farcaster.celo domain names with NFT functionality on Celo mainnet",
+  "iconUrl": "https://farcaster-celo.vercel.app/logo-512-v2.png",
+  "homeUrl": "https://farcaster-celo.vercel.app/",
+  "imageUrl": "https://farcaster-celo.vercel.app/hero-logo.png",
+  "buttonTitle": "Open App",
+  "splashImageUrl": "https://farcaster-celo.vercel.app/hero-logo.png",
+  "splashBackgroundColor": "#000000"
+}

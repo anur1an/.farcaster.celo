@@ -4,7 +4,8 @@ const CELO_RPC_URL = process.env.NEXT_PUBLIC_CELO_RPC_URL || 'https://forno.celo
 const CELO_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CELO_CHAIN_ID || '42220')
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CELO_CONTRACT_ADDRESS || ''
 const REGISTRATION_FEE_USD = parseFloat(process.env.NEXT_PUBLIC_REGISTRATION_FEE_USD || '0.25')
-const GAS_PRICE_GWEI = parseFloat(process.env.NEXT_PUBLIC_GAS_PRICE_GWEI || '0.25')
+// Real Celo mainnet gas price is typically 0.5-1 gwei (much lower than Ethereum)
+const DEFAULT_GAS_PRICE_GWEI = parseFloat(process.env.NEXT_PUBLIC_GAS_PRICE_GWEI || '1')
 
 export function getCeloProvider() {
   return new ethers.JsonRpcProvider(CELO_RPC_URL, {
@@ -17,11 +18,15 @@ export async function getGasPrice() {
   const provider = getCeloProvider()
   try {
     const feeData = await provider.getFeeData()
-    // Use gasPrice from feeData, or fall back to a default
-    return feeData.gasPrice || ethers.parseUnits('0.25', 'gwei')
+    // Celo mainnet gas price is usually in wei, return it directly
+    if (feeData.gasPrice && feeData.gasPrice > 0n) {
+      return feeData.gasPrice
+    }
+    // Fallback to reasonable Celo gas price (1 gwei = 1000000000 wei)
+    return ethers.parseUnits(DEFAULT_GAS_PRICE_GWEI.toString(), 'gwei')
   } catch (error) {
-    console.warn('Error getting fee data, using default:', error)
-    return ethers.parseUnits('0.25', 'gwei')
+    console.warn('Error getting fee data from Celo, using default:', error)
+    return ethers.parseUnits(DEFAULT_GAS_PRICE_GWEI.toString(), 'gwei')
   }
 }
 
@@ -170,29 +175,35 @@ export async function estimateRegistrationCost(): Promise<{
 }> {
   try {
     const gasPrice = await getGasPrice()
-    const estimatedGas = ethers.parseEther('0.05')
+    // Realistic gas estimate for domain registration: 100,000 - 150,000 gas
+    // Using 120,000 as average
+    const estimatedGasUnits = 120000n
+    const estimatedGasWei = gasPrice * BigInt(estimatedGasUnits)
 
-    const totalCostWei = estimatedGas * gasPrice
-    const totalCostCELO = ethers.formatEther(totalCostWei)
-    const totalCostUSD = (
-      parseFloat(totalCostCELO) * REGISTRATION_FEE_USD
-    ).toFixed(4)
+    const totalCostCELO = ethers.formatEther(estimatedGasWei)
+    // REGISTRATION_FEE_USD is the domain fee, not tied to gas cost
+    // Calculate realistic USD amount based on actual CELO/USD rate (~1.5-2.5 USD per CELO on Celo)
+    const celoToUSD = 2.0 // Conservative estimate
+    const totalCostUSD = (parseFloat(totalCostCELO) * celoToUSD + REGISTRATION_FEE_USD).toFixed(4)
 
     return {
-      gasEstimate: estimatedGas.toString(),
+      gasEstimate: estimatedGasWei.toString(),
       gasPrice: gasPrice.toString(),
-      totalCostWei: totalCostWei.toString(),
-      totalCostCELO,
+      totalCostWei: estimatedGasWei.toString(),
+      totalCostCELO: parseFloat(totalCostCELO).toFixed(6),
       totalCostUSD,
     }
   } catch (error) {
     console.error('Error estimating gas:', error)
+    // Fallback: reasonable Celo estimate (120,000 gas × 1 gwei)
+    const fallbackGas = ethers.parseUnits('0.00012', 'ether')
+    const fallbackCELO = ethers.formatEther(fallbackGas)
     return {
-      gasEstimate: '50000000000000000',
-      gasPrice: ethers.parseEther('0.25').toString(),
-      totalCostWei: ethers.parseEther('0.25').toString(),
-      totalCostCELO: '0.25',
-      totalCostUSD: '0.25',
+      gasEstimate: fallbackGas.toString(),
+      gasPrice: ethers.parseUnits(DEFAULT_GAS_PRICE_GWEI.toString(), 'gwei').toString(),
+      totalCostWei: fallbackGas.toString(),
+      totalCostCELO: fallbackCELO,
+      totalCostUSD: (parseFloat(fallbackCELO) * 2.0 + REGISTRATION_FEE_USD).toFixed(4),
     }
   }
 }

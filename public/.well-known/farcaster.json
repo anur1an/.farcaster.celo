@@ -4,8 +4,11 @@
     "payload": "eyJkb21haW4iOiJmYXJjYXN0ZXItY2Vsby52ZXJjZWwuYXBwIn0",
     "signature": "pmNO2zJtHWJ0oiLWlTOMjrUWZazxci2ZDCToAHrQuY0oHcGeWul9svkyaapOL5tPlIPDT/ywutOFlsjjHRXMxBs="
   },
-  "name": "Farcaster Names",
+  "name": "Farcaster Celo Names",
   "short_name": "Names",
+  "homeUrl": "https://farcaster-celo.vercel.app/",
+  "iconUrl": "https://farcaster-celo.vercel.app/icon.png",
+  "imageUrl": "https://farcaster-celo.vercel.app/embed.png",
   "description": "Register and manage .farcaster.celo domain names with NFT functionality on Celo mainnet",
   "splashImageUrl": "/hero-logo.png",
   "splashBackgroundColor": "#000000",
