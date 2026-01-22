@@ -9,6 +9,8 @@ import {
 } from '@/lib/frame-utils'
 
 export async function POST(request: NextRequest) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_FARCASTER_FRAME_URL || 'http://localhost:3000'
+  
   try {
     const body = (await request.json()) as FrameRequest
 
@@ -93,12 +95,12 @@ export async function POST(request: NextRequest) {
           {
             label: 'Visit App',
             action: 'link',
-            target: process.env.NEXT_PUBLIC_FARCASTER_FRAME_URL,
+            target: baseUrl,
           },
         ]
     }
 
-    postUrl = `${process.env.NEXT_PUBLIC_FARCASTER_FRAME_URL}/api/frame`
+    postUrl = `${baseUrl}/api/frame`
     const state = encodeFrameState(nextState)
 
     const response = createFrameResponse({
@@ -126,10 +128,10 @@ export async function POST(request: NextRequest) {
         {
           label: 'Visit App',
           action: 'link',
-          target: process.env.NEXT_PUBLIC_FARCASTER_FRAME_URL,
+          target: baseUrl,
         },
       ],
-      postUrl: `${process.env.NEXT_PUBLIC_FARCASTER_FRAME_URL}/api/frame`,
+      postUrl: `${baseUrl}/api/frame`,
     })
 
     return NextResponse.json(fallbackResponse)
@@ -137,43 +139,36 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const page = searchParams.get('page') || 'home'
-
-  const images: Record<string, string> = {
-    home: generateFrameImage(
-      'Farcaster Names',
-      'Register .farcaster.celo domains with NFT functionality on Celo mainnet'
-    ),
-    search: generateFrameImage(
-      'Find Your Domain',
-      'Search for available .farcaster.celo domains'
-    ),
-    register: generateFrameImage(
-      'Register Domain',
-      'Complete your domain registration and mint NFT'
-    ),
-    gallery: generateFrameImage(
-      'Your Domains',
-      'View and manage your .farcaster.celo domain NFTs'
-    ),
-  }
-
-  const image = images[page] || images.home
-
-  const html = `
+  try {
+    const frameUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_FARCASTER_FRAME_URL || 'http://localhost:3000'
+    
+    const html = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta property="fc:frame" content="vNext" />
-      <meta property="fc:frame:image" content="${image}" />
-      <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
-      <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_FARCASTER_FRAME_URL}/api/frame" />
-      <meta property="fc:frame:button:1" content="Get Started" />
-      <meta property="fc:frame:button:1:action" content="post" />
       <title>Farcaster Names</title>
+      
+      <!-- Open Graph -->
+      <meta property="og:title" content="Farcaster Names - Register .celo Domains" />
+      <meta property="og:description" content="Own your Farcaster identity with a verifiable NFT domain on Celo mainnet" />
+      <meta property="og:image" content="${frameUrl}/api/frame" />
+      <meta property="og:url" content="${frameUrl}" />
+      
+      <!-- Farcaster Frame -->
+      <meta property="fc:frame" content="vNext" />
+      <meta property="fc:frame:image" content="${frameUrl}/api/frame" />
+      <meta property="fc:frame:image:aspect_ratio" content="1.91:1" />
+      <meta property="fc:frame:post_url" content="${frameUrl}/api/frame" />
+      <meta property="fc:frame:button:1" content="Register Domain" />
+      <meta property="fc:frame:button:1:action" content="post" />
+      <meta property="fc:frame:button:2" content="My Domains" />
+      <meta property="fc:frame:button:2:action" content="post" />
+      <meta property="fc:frame:button:3" content="Visit App" />
+      <meta property="fc:frame:button:3:action" content="link" />
+      <meta property="fc:frame:button:3:target" content="${frameUrl}" />
+      
       <style>
         body { margin: 0; padding: 20px; font-family: system-ui; }
         .container { max-width: 600px; margin: 0 auto; }
@@ -189,11 +184,16 @@ export async function GET(request: NextRequest) {
       </div>
     </body>
     </html>
-  `
+    `
 
-  return new NextResponse(html, {
-    headers: {
-      'Content-Type': 'text/html',
-    },
-  })
+    return new NextResponse(html, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'max-age=0, no-cache, no-store, must-revalidate',
+      },
+    })
+  } catch (error) {
+    console.error('Error in frame GET handler:', error)
+    return new NextResponse('Error loading frame', { status: 500 })
+  }
 }
