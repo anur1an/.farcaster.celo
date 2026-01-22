@@ -1,15 +1,16 @@
 {
   "name": "Farcaster Names",
+  "short_name": "Names",
   "description": "Register and manage .farcaster.celo domain names with NFT functionality on Celo mainnet",
-  "short_name": "Farcaster Names",
   "start_url": "/",
-  "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#8A63D2",
-  "orientation": "portrait-primary",
   "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
   "dir": "ltr",
   "lang": "en",
+  "background_color": "#000000",
+  "theme_color": "#8A63D2",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
       "src": "/logo-192-v2.png",
@@ -30,13 +31,60 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["productivity", "utilities"],
   "screenshots": [
     {
       "src": "/logo-512-v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow"
+    },
+    {
+      "src": "/logo-512-v2.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Search Domains",
+      "short_name": "Search",
+      "description": "Search for available domains",
+      "url": "/?tab=search",
+      "icons": [
+        {
+          "src": "/logo-192-v2.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Register Domain",
+      "short_name": "Register",
+      "description": "Register a new domain",
+      "url": "/?tab=register",
+      "icons": [
+        {
+          "src": "/logo-192-v2.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "My Domains",
+      "short_name": "Domains",
+      "description": "View your registered domains",
+      "url": "/?tab=gallery",
+      "icons": [
+        {
+          "src": "/logo-192-v2.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

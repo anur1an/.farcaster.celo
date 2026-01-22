@@ -4,30 +4,92 @@
     "payload": "eyJkb21haW4iOiJmYXJjYXN0ZXItY2Vsby52ZXJjZWwuYXBwIn0",
     "signature": "pmNO2zJtHWJ0oiLWlTOMjrUWZazxci2ZDCToAHrQuY0oHcGeWul9svkyaapOL5tPlIPDT/ywutOFlsjjHRXMxBs="
   },
-  "version": "1",
   "name": "Farcaster Names",
-  "shortName": "farcaster-names",
+  "short_name": "Names",
   "description": "Register and manage .farcaster.celo domain names with NFT functionality on Celo mainnet",
-  "logo": "/logo-512-v2.png",
-  "heroImage": "/hero-logo.png",
-  "splashImageUrl": "/logo-512-v2.png",
-  "splashBackgroundColor": "#000000",
-  "author": "Farcaster Names",
-  "website": "https://farcaster-celo.vercel.app",
-  "homepage": "https://farcaster-celo.vercel.app",
-  "iconUrl": "/logo-192-v2.png",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "dir": "ltr",
+  "lang": "en",
+  "background_color": "#000000",
+  "theme_color": "#8A63D2",
   "categories": ["productivity", "utilities"],
-  "actions": [
+  "icons": [
     {
-      "type": "post",
-      "name": "Register Domain",
-      "icon": "pencil"
+      "src": "/logo-192-v2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "type": "post",
-      "name": "View Domains",
-      "icon": "file"
+      "src": "/logo-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/hero-logo.png",
+      "sizes": "1200x400",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "tags": ["domain", "nft", "celo", "web3"]
+  "screenshots": [
+    {
+      "src": "/logo-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/logo-512-v2.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Search Domains",
+      "short_name": "Search",
+      "description": "Search for available domains",
+      "url": "/?tab=search",
+      "icons": [
+        {
+          "src": "/logo-192-v2.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Register Domain",
+      "short_name": "Register",
+      "description": "Register a new domain",
+      "url": "/?tab=register",
+      "icons": [
+        {
+          "src": "/logo-192-v2.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "My Domains",
+      "short_name": "Domains",
+      "description": "View your registered domains",
+      "url": "/?tab=gallery",
+      "icons": [
+        {
+          "src": "/logo-192-v2.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }

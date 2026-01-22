@@ -16,6 +16,7 @@ export async function GET() {
             flexDirection: 'column',
             backgroundColor: '#0a0a0a',
             backgroundImage: 'linear-gradient(135deg, #8A63D2 0%, #35C759 100%)',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
           }}
         >
           <div
@@ -34,25 +35,29 @@ export async function GET() {
                 fontWeight: 'bold',
                 color: 'white',
                 textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                margin: 0,
               }}
             >
               Farcaster Names
             </div>
             <div
               style={{
-                fontSize: '36px',
-                color: 'rgba(255,255,255,0.8)',
+                fontSize: '40px',
+                color: 'rgba(255,255,255,0.9)',
+                margin: '0 40px',
+                fontWeight: '600',
               }}
             >
-              .celo Domain Registry
+              Register .celo domains
             </div>
             <div
               style={{
                 fontSize: '24px',
-                color: 'rgba(255,255,255,0.6)',
+                color: 'rgba(255,255,255,0.7)',
+                margin: '10px 0 0 0',
               }}
             >
-              Register & Mint NFT Domains on Celo Mainnet
+              On Celo Mainnet • Mint as NFT • Powered by Farcaster
             </div>
           </div>
         </div>
@@ -64,6 +69,6 @@ export async function GET() {
     )
   } catch (error) {
     console.error('Frame image error:', error)
-    return new Response('Error generating image', { status: 500 })
+    return new Response('Error generating frame image', { status: 500 })
   }
 }

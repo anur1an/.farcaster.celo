@@ -103,3 +103,36 @@ export interface NFTCard {
     social_links?: string
   }
 }
+
+/**
+ * Mini App specific types
+ */
+
+export interface MiniAppContext {
+  fid: number
+  contextToken: string
+  timestamp: number
+  isInFrame: boolean
+}
+
+export interface ShareOptions {
+  text: string
+  imageUrl?: string
+  title?: string
+  targetUrl?: string
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  message?: string
+  timestamp: string
+}
+
+export interface ErrorResponse {
+  error: string
+  message: string
+  statusCode: number
+  timestamp: string
+}
