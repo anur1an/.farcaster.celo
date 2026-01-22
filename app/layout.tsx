@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   title: 'Farcaster Names - .celo Domain Registry',
   description: 'Register and manage .farcaster.celo domain names with NFT functionality on Celo mainnet',
   generator: 'Farcaster Mini App',
-  manifest: '/manifest.json',
+  manifest: `${APP_URL}/manifest.json`,
   applicationName: 'Farcaster Names',
   appleWebApp: {
     capable: true,

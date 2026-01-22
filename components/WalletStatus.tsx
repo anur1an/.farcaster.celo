@@ -57,14 +57,19 @@ export function WalletStatus({ address: initialAddress, onConnect, gasPrice, onA
   const handleConnect = async () => {
     try {
       setError(null)
-      // Use the first connector (WalletConnect)
-      connect({ connector: connectors[0] })
-      if (onConnect) {
-        await onConnect()
+      // Use Farcaster Mini App connector (first connector is miniapp)
+      if (connectors.length > 0) {
+        console.log('[WalletStatus] Connecting with connector:', connectors[0].name)
+        connect({ connector: connectors[0] })
+        if (onConnect) {
+          await onConnect()
+        }
+      } else {
+        setError('No wallet connectors available')
       }
     } catch (err) {
-      console.error('Failed to connect wallet:', err)
-      setError('Failed to connect wallet')
+      console.error('[WalletStatus] Failed to connect wallet:', err)
+      setError('Failed to connect wallet. Please try again.')
     }
   }
 
