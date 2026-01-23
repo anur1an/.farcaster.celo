@@ -50,27 +50,25 @@ export function MintTransactionHandler({
       console.log('[MintTxHandler] FID:', fid)
       console.log('[MintTxHandler] Owner:', walletAddress)
 
-      // Check and switch to Celo Mainnet
+      // IMPORTANT: Switch to Celo Mainnet FIRST before creating signer
+      console.log('[MintTxHandler] Step 0: Ensuring wallet is on Celo Mainnet...')
       try {
-        const provider = await getFarcasterWalletProvider()
-        const chainIdHex = await provider.request({ method: 'eth_chainId' })
-        const currentChainId = parseInt(chainIdHex, 16)
-        const CELO_CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CELO_CHAIN_ID || '42220')
-
-        if (currentChainId !== CELO_CHAIN_ID) {
-          console.log('[MintTxHandler] Switching to Celo Mainnet...')
-          await switchToCeloMainnet()
-        }
+        await switchToCeloMainnet()
+        console.log('[MintTxHandler] Successfully on Celo Mainnet')
       } catch (chainError) {
-        console.warn('[MintTxHandler] Could not verify/switch chain:', chainError)
+        console.error('[MintTxHandler] Failed to switch to Celo Mainnet:', chainError)
+        throw new Error('Failed to switch to Celo Mainnet. Please manually switch your wallet to Celo chain.')
       }
+
+      // Wait a moment for chain switch to complete
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       // Estimate gas
       console.log('[MintTxHandler] Estimating gas...')
       const gasData = await estimateMintingGas()
       setGasEstimate(gasData)
 
-      // Get ethers signer dari wallet provider
+      // Get ethers signer dari wallet provider - AFTER chain switch
       const provider = await getFarcasterWalletProvider()
       const ethersProvider = new ethers.BrowserProvider(provider)
       const signer = await ethersProvider.getSigner()

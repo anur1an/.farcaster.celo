@@ -23,6 +23,9 @@ import {
   checkUserBalance,
 } from '@/lib/minting-service'
 
+// Wallet utilities
+import { switchToCeloMainnet } from '@/lib/farcaster-wallet'
+
 // Wagmi untuk wallet connection
 import { useAccount, useWalletClient } from 'wagmi'
 
@@ -175,8 +178,23 @@ export function RegistrationForm({
       console.log('[RegistrationForm] FID:', mintParams.fid)
       console.log('[RegistrationForm] Owner:', mintParams.owner)
 
+      // Step 0: CRITICAL - Ensure wallet is on Celo Mainnet before mint
+      console.log('[RegistrationForm] Step 0: Ensuring wallet is on Celo Mainnet...')
+      setCurrentStep('approval') // Show "approval" step while switching
+      try {
+        await switchToCeloMainnet()
+        console.log('[RegistrationForm] Successfully on Celo Mainnet')
+      } catch (chainError) {
+        console.error('[RegistrationForm] Failed to switch to Celo Mainnet:', chainError)
+        setError('Failed to switch to Celo Mainnet. Please manually switch your wallet to Celo chain.')
+        setCurrentStep('prepare')
+        return
+      }
+
+      // Wait a moment for chain switch to complete
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       // Step 1: Approval (jika diperlukan)
-      setCurrentStep('approval')
       console.log('[RegistrationForm] Step 1: Requesting approval...')
       // Note: completeMinutingFlow sudah handle approval internally
 

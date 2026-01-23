@@ -184,7 +184,9 @@ export async function mintDomain(
 
     // If using native CELO payment
     if (options?.useNativePayment) {
-      txOptions.value = ethers.parseEther(ethers.formatEther(BigInt(MINT_PRICE_WEI)))
+      // IMPORTANT: Use MINT_PRICE_WEI directly (already in wei), not parseEther
+      txOptions.value = BigInt(MINT_PRICE_WEI)
+      console.log('[Minting] Native CELO payment value:', ethers.formatEther(txOptions.value), 'CELO')
     }
 
     // Call mint function dengan label + FID
@@ -222,6 +224,7 @@ export async function mintDomain(
 
 /**
  * Complete flow: Approval + Mint dalam satu transaction sequence
+ * PENTING: Pastikan signer sudah on Celo chain sebelum call function ini
  */
 export async function completeMinutingFlow(
   signer: ethers.Signer,
@@ -235,9 +238,22 @@ export async function completeMinutingFlow(
   mintHash?: string
   fullDomain?: string
   error?: string
-  step?: 'approval' | 'mint'
+  step?: 'approval' | 'mint' | 'chain-check'
 }> {
   try {
+    // Validate signer is on correct chain
+    try {
+      const signerAddress = await signer.getAddress()
+      console.log('[Minting] Signer address:', signerAddress)
+    } catch (signerError) {
+      console.error('[Minting] Failed to get signer address:', signerError)
+      return {
+        success: false,
+        error: 'Failed to get signer. Wallet may not be connected properly.',
+        step: 'chain-check',
+      }
+    }
+
     const useNative = options?.useNativePayment || !FEE_TOKEN_ADDRESS
 
     // Step 1: Approval (jika menggunakan ERC20)
@@ -282,6 +298,19 @@ export async function completeMinutingFlow(
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error'
     console.error('[Minting] Complete flow error:', errorMsg)
+    
+    // Parse viem chain mismatch error
+    if (errorMsg.includes('does not match the target chain') || 
+        errorMsg.includes('chain') ||
+        errorMsg.includes('8453') ||
+        errorMsg.includes('42220')) {
+      return {
+        success: false,
+        error: 'Wallet is not on Celo Mainnet. Please switch your wallet to Celo and try again.',
+        step: 'chain-check',
+      }
+    }
+    
     return {
       success: false,
       error: errorMsg,
