@@ -242,16 +242,15 @@ export async function completeMinutingFlow(
 }> {
   try {
     // Validate signer is on correct chain
+    let signerAddress = 'unknown'
     try {
-      const signerAddress = await signer.getAddress()
+      if (typeof (signer as any).getAddress === 'function') {
+        signerAddress = await (signer as any).getAddress()
+      }
       console.log('[Minting] Signer address:', signerAddress)
     } catch (signerError) {
-      console.error('[Minting] Failed to get signer address:', signerError)
-      return {
-        success: false,
-        error: 'Failed to get signer. Wallet may not be connected properly.',
-        step: 'chain-check',
-      }
+      console.warn('[Minting] Could not get signer address, proceeding anyway:', signerError)
+      // Don't fail, proceed with mint anyway
     }
 
     const useNative = options?.useNativePayment || !FEE_TOKEN_ADDRESS

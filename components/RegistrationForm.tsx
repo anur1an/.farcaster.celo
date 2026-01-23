@@ -24,10 +24,11 @@ import {
 } from '@/lib/minting-service'
 
 // Wallet utilities
-import { switchToCeloMainnet } from '@/lib/farcaster-wallet'
+import { switchToCeloMainnet, getFarcasterWalletProvider } from '@/lib/farcaster-wallet'
 
 // Wagmi untuk wallet connection
 import { useAccount, useWalletClient } from 'wagmi'
+import { ethers } from 'ethers'
 
 import type { GasEstimate } from '@/lib/types'
 
@@ -202,8 +203,13 @@ export function RegistrationForm({
       setCurrentStep('mint')
       console.log('[RegistrationForm] Step 2: Minting domain...')
 
-      // Get signer dari wallet client - sesuai dengan wagmi v2 API
-      const signer = await (walletClient as any).getSigner?.() || walletClient as any
+      // Get ethers signer from Farcaster wallet provider (not from wagmi walletClient)
+      // This ensures we have a proper ethers.Signer with all required methods
+      const provider = await getFarcasterWalletProvider()
+      const ethersProvider = new ethers.BrowserProvider(provider)
+      const signer = await ethersProvider.getSigner()
+
+      console.log('[RegistrationForm] Signer obtained, calling mint flow...')
 
       // Call complete minting flow (approval + mint)
       const result = await completeMinutingFlow(signer, mintParams, {
