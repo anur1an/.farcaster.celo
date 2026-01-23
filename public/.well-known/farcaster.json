@@ -5,7 +5,7 @@
     "signature": "pmNO2zJtHWJ0oiLWlTOMjrUWZazxci2ZDCToAHrQuY0oHcGeWul9svkyaapOL5tPlIPDT/ywutOFlsjjHRXMxBs="
   },
   "frame": {
-    "version": "vNext",
+    "version": "1",
     "name": "Farcaster Celo Names",
     "homeUrl": "https://farcaster-celo.vercel.app",
     "iconUrl": "https://farcaster-celo.vercel.app/logo-512-v2.png",
